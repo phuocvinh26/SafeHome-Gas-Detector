@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Safehome Multifunction Hub - Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            500: '#0284c7',
+                            600: '#0369a1',
+
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-danger {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            50% {
+                transform: scale(1.03);
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+        }
+
+        .badge-danger-pulse {
+            animation: pulse-danger 1.8s infinite;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-slate-50 text-slate-800 min-h-screen antialiased flex flex-col font-sans selection:bg-sky-500 selection:text-white">
+    <!-- ================= TOP HEADER ================= -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand & Hub Status -->
+            <div class="flex items-center gap-3.5">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-500 flex items-center justify-center shadow-md shadow-sky-500/20">
+                    <i class="ph-bold ph-shield-check text-xl text-white"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-lg text-slate-900 leading-tight tracking-tight">Safehome Multifunction
+                            Hub</h1>
+                        <span
+                            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
+                                id="connIndicator"></span>
+                            <span id="connText">Online</span>
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 hidden sm:block">Group 10</p>
+                </div>
+            </div>
+            <!-- User actions & Logout -->
+            <div class="flex items-center gap-3">
+                <!-- Logout Button -->
+                <a class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-red-50 hover:text-red-600 hover:border-red-200 border border-slate-200 transition-all duration-150"
+                    href="login.html" onclick="handleLogout(event)">
+                    <i class="ph-bold ph-sign-out text-base"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    <!-- ================= NOTIFICATION TOAST ================= -->
+    <div class="fixed top-20 right-4 z-50 transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-none max-w-sm w-full"
+        id="toastNotification">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-xl flex items-start gap-3" id="toastCard">
+            <i class="ph-fill ph-check-circle text-2xl text-emerald-500 shrink-0 mt-0.5" id="toastIcon"></i>
+            <div class="flex-1">
+                <h4 class="text-sm font-semibold text-slate-900" id="toastTitle">Notice</h4>
+                <p class="text-xs text-slate-600 mt-0.5" id="toastMessage">Action completed successfully.</p>
+            </div>
+        </div>
+    </div>
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+        <!-- Top Alert Banner (Displays if Gas/Danger or Valve Alert) -->
+        <div class="hidden rounded-2xl bg-red-50 border border-red-300 p-4 text-red-900 flex items-center justify-between gap-4 shadow-sm animate-bounce"
+            id="globalHazardBanner">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0 border border-red-200 text-red-600">
+                    <i class="ph-fill ph-warning-octagon text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-red-900 uppercase tracking-wide">Hazard Detected in RoomHub!</h3>
+                    <p class="text-xs text-red-700">Smoke or Gas alert has triggered emergency protocols. Immediate
+                        check required.</p>
+                </div>
+            </div>
+            <button
+                class="shrink-0 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm uppercase transition-colors"
+                onclick="emergencyCloseValve()">
+                Shut Valve Now
+            </button>
+        </div>
+        <!-- ================= DASHBOARD GRID ================= -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- CARD 1: ENVIRONMENT CARD -->
+            <div
+                class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-slate-300 transition-all">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-9 h-9 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
+                                <i class="ph-bold ph-thermometer-simple text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-900 text-base">Environment</h3>
+                                <p class="text-xs text-slate-500">Atmospheric metrics</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Metrics Row -->
+                    <div class="grid grid-cols-3 gap-3 pt-2">
+                        <!-- Temperature -->
+                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
+                            <span
+                                class="text-[11px] font-medium text-slate-500 uppercase tracking-wider block mb-1">Temp</span>
+                            <div class="flex items-baseline justify-center">
+                                <span class="text-2xl font-extrabold text-slate-900" id="tempValue">--</span>
+                                <span class="text-xs text-slate-500 ml-0.5 font-medium">°C</span>
+                            </div>
+                            <div class="mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                id="tempStatusPill">
+                                NORMAL
+                            </div>
+                        </div>
+                        <!-- Humidity -->
+                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
+                            <span
+                                class="text-[11px] font-medium text-slate-500 uppercase tracking-wider block mb-1">Humidity</span>
+                            <div class="flex items-baseline justify-center">
+                                <span class="text-2xl font-extrabold text-slate-900" id="humidityValue">--</span>
+                                <span class="text-xs text-slate-500 ml-0.5 font-medium">%</span>
+                            </div>
+                            <div class="mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200"
+                                id="humStatusPill">
+                                OPTIMAL
+                            </div>
+                        </div>
+                        <!-- Light Intensity -->
+                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
+                            <span
+                                class="text-[11px] font-medium text-slate-500 uppercase tracking-wider block mb-1">Light
+                                (0-10)</span>
+                            <div class="flex items-baseline justify-center">
+                                <span class="text-2xl font-extrabold text-amber-600" id="lightValue">--</span>
+                                <span class="text-xs text-slate-500 ml-0.5 font-medium">/10</span>
+                            </div>
+                            <!-- Light scale bar -->
+                            <div class="w-full bg-slate-200 rounded-full h-1.5 mt-2.5 overflow-hidden">
+                                <div class="bg-amber-500 h-1.5 rounded-full transition-all duration-500"
+                                    id="lightProgressBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- CARD 2: GAS / SMOKE ALERT CARD -->
+            <div
+                class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-slate-300 transition-all relative overflow-hidden">
+                <!-- Subtle hazard indicator background tint -->
+                <div class="absolute -right-12 -top-12 w-40 h-40 bg-emerald-100/50 rounded-full blur-2xl pointer-events-none transition-all duration-500"
+                    id="smokeAlertBackdrop"></div>
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 transition-colors"
+                                id="gasIconBox">
+                                <i class="ph-bold ph-wind text-xl" id="gasIcon"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-900 text-base">Gas / Smoke Status</h3>
+                                <p class="text-xs text-slate-500">Gas or Smoke Detection</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Central Alert Display -->
+                    <div class="py-6 flex flex-col items-center justify-center">
+                        <!-- Dynamic Status Badge -->
+                        <div class="px-7 py-3 rounded-2xl font-black text-lg tracking-wider flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 transition-all duration-300 shadow-sm"
+                            id="smokeStatusBadge">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" id="smokeBadgeDot"></span>
+                            <span id="smokeBadgeText">SAFE</span>
+                        </div>
+                        <!-- Subtext & Guidance -->
+                        <p class="text-xs text-slate-500 text-center mt-3 max-w-xs leading-relaxed"
+                            id="smokeDescription">
+                            No detect gas or smoke
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- CARD 3: VALVE CONTROL CARD -->
+            <div
+                class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-slate-300 transition-all">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div
+                                class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+                                <i class="ph-bold ph-faucet text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-slate-900 text-base">Valve Safety Control</h3>
+                                <p class="text-xs text-slate-500">Turn off valve emergency</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Valve Status Header -->
+                    <div
+                        class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 mb-4 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center"
+                                id="valveIndicatorIconBox">
+                                <i class="ph-bold ph-lock-key-open text-lg" id="valveIcon"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-500 block font-medium">Current State</span>
+                                <span class="text-base font-bold text-emerald-700 tracking-wide"
+                                    id="valveStatusText">OPEN</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Safety Notice -->
+                    <p class="text-[11px] text-slate-500 mb-4 leading-normal flex items-start gap-1.5">
+                        <i class="ph-fill ph-shield-warning text-amber-500 shrink-0 mt-0.5 text-sm"></i>
+                        <span><strong>Safety Lockout:</strong> Just allow for re-opening on-site physical.
+                            Thanks.</span>
+                    </p>
+                    <!-- Critical Action Button -->
+                    <button
+                        class="w-full py-3.5 px-4 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-extrabold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-red-500/25 transition-all flex items-center justify-center gap-3 group border border-red-500"
+                        id="emergencyValveBtn" onclick="emergencyCloseValve()">
+                        <i class="ph-fill ph-warning-octagon text-xl group-hover:animate-pulse"></i>
+                        <span>EMERGENCY CLOSE VALVE</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- ================= ROW 2: SETTINGS COMPONENT ================= -->
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-6 lg:p-8 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-200 gap-3">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
+                        <i class="ph-bold ph-sliders-horizontal text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Threshold Settings</h3>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button
+                        class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium flex items-center gap-1.5 transition-colors shadow-sm"
+                        onclick="loadSettingsFromFirebase()" type="button">
+                        <i class="ph ph-arrows-clockwise text-sm"></i>
+                        <span>Reload Settings</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Settings Form -->
+            <form class="mt-6 space-y-6" id="settingsForm" onsubmit="saveSettings(event)">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Temp Warning -->
+                    <div
+                        class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/20 transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
+                                for="tempWarningInput">
+                                <i class="ph-fill ph-thermometer text-amber-500"></i> Temp Warning
+                            </label>
+                            <span class="text-xs text-slate-400 font-mono">°C</span>
+                        </div>
+                        <input
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-slate-900 font-mono text-base focus:outline-none focus:border-sky-600 focus:bg-white transition-all shadow-sm"
+                            id="tempWarningInput" placeholder="e.g. 28.0" required="" step="0.5" type="number" />
+                    </div>
+                    <!-- Temp Danger -->
+                    <div
+                        class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
+                                for="tempDangerInput">
+                                <i class="ph-fill ph-fire text-red-500"></i> Temp Danger
+                            </label>
+                            <span class="text-xs text-slate-400 font-mono">°C</span>
+                        </div>
+                        <input
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-slate-900 font-mono text-base focus:outline-none focus:border-red-600 focus:bg-white transition-all shadow-sm"
+                            id="tempDangerInput" placeholder="e.g. 35.0" required="" step="0.5" type="number" />
+                    </div>
+                    <!-- Hum Warning -->
+                    <div
+                        class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/20 transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
+                                for="humWarningInput">
+                                <i class="ph-fill ph-drop text-amber-500"></i> Hum Warning
+                            </label>
+                            <span class="text-xs text-slate-400 font-mono">%</span>
+                        </div>
+                        <input
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-slate-900 font-mono text-base focus:outline-none focus:border-sky-600 focus:bg-white transition-all shadow-sm"
+                            id="humWarningInput" placeholder="e.g. 70" required="" step="1" type="number" />
+                    </div>
+                    <!-- Hum Danger -->
+                    <div
+                        class="bg-slate-800/40 border border-slate-200/80 rounded-xl p-4 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all bg-slate-50">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-700 flex items-center gap-1.5"
+                                for="humDangerInput">
+                                <i class="ph-fill ph-drop-half-bottom text-red-500"></i> Hum Danger
+                            </label>
+                            <span class="text-xs text-slate-400 font-mono">%</span>
+                        </div>
+                        <input
+                            class="w-full bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 text-slate-900 font-mono text-base focus:outline-none focus:border-red-600 focus:bg-white transition-all shadow-sm"
+                            id="humDangerInput" placeholder="e.g. 85" required="" step="1" type="number" />
+                    </div>
+                </div>
+                <!-- Form Actions -->
+                <div
+                    class="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-slate-200 gap-4">
+                    <button
+                        class="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-500/25 transition-all flex items-center justify-center gap-2"
+                        id="saveSettingsBtn" type="submit">
+                        <i class="ph-bold ph-floppy-disk text-base"></i>
+                        <span>Save Settings</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+    <!-- ================= FOOTER ================= -->
+    <footer class="mt-auto border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">
+        <p>Safehome Multifunction Hub • Group 10</p>
+    </footer>
+    <!-- ================= FIREBASE V9 SCRIPTS (CDN) ================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBbT1282KcKWuQ2jRsH3XJ_Fya8PL3SA8",
+            authDomain: "safehome-multifunction-hub.firebaseapp.com",
+            databaseURL: "https://room-monitoring-hub-47066-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "safehome-multifunction-hub",
+            storageBucket: "safehome-multifunction-hub.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
+        };
+
+        // Flag to detect if real API key was inserted
+        const isFirebaseConfigured = !firebaseConfig.apiKey.includes("YOUR_API_KEY_HERE");
+
+        let db = null;
+        let app = null;
+
+        try {
+            if (isFirebaseConfigured) {
+                app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+                console.log("Firebase v9 initialized successfully with project:", firebaseConfig.projectId);
+            } else {
+                console.warn("Firebase configuration has placeholder credentials. Enabling simulated data mode for testing.");
+                document.getElementById('mockModeToggleBtn').classList.add('ring-2', 'ring-sky-500/50');
+            }
+        } catch (err) {
+            console.error("Firebase Initialization Error:", err);
+        }
+
+        // Expose helpers to window so non-module inline scripts can invoke them
+        window.firebaseDB = db;
+        window.firebaseRef = ref;
+        window.firebaseOnValue = onValue;
+        window.firebaseSet = set;
+        window.firebaseUpdate = update;
+        window.isFirebaseConfigured = isFirebaseConfigured;
+
+        // Trigger initial data listener once modules are ready
+        if (typeof window.initRealtimeSync === 'function') {
+            window.initRealtimeSync();
+        }
+    </script>
+    <!-- ================= APPLICATION & UI LOGIC ================= -->
+    <script>
+        // In-memory application state
+        let state = {
+            temp: 24.5,
+            humidity: 55,
+            light: 7,
+            smoke_detected: 0,
+            valve_open: true,
+            settings: {
+                temp_warning: 28.0,
+                temp_danger: 35.0,
+                hum_warning: 70,
+                hum_danger: 85
+            },
+            mockInterval: null
+        };
+
+        // Toast Notification Utility
+        function showToast(title, message, type = 'success') {
+            const toast = document.getElementById('toastNotification');
+            const toastCard = document.getElementById('toastCard');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastTitle.textContent = title;
+            toastMsg.textContent = message;
+
+            if (type === 'danger' || type === 'error') {
+                toastCard.className = "bg-white border border-red-200 rounded-xl p-4 shadow-xl flex items-start gap-3";
+                toastIcon.className = "ph-fill ph-warning-circle text-2xl text-red-500 shrink-0 mt-0.5";
+            } else if (type === 'warning') {
+                toastCard.className = "bg-white border border-amber-200 rounded-xl p-4 shadow-xl flex items-start gap-3";
+                toastIcon.className = "ph-fill ph-warning text-2xl text-amber-500 shrink-0 mt-0.5";
+            } else {
+                toastCard.className = "bg-white border border-slate-200 rounded-xl p-4 shadow-xl flex items-start gap-3";
+                toastIcon.className = "ph-fill ph-check-circle text-2xl text-emerald-500 shrink-0 mt-0.5";
+            }
+
+            toast.classList.remove('translate-y-[-20px]', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-20px]', 'opacity-0', 'pointer-events-none');
+            }, 4000);
+        }
+
+        // ================= RENDER COMPONENTS WITH STATE =================
+
+        function renderEnvironmentCard() {
+            // Temp
+            const tempEl = document.getElementById('tempValue');
+            const tempPill = document.getElementById('tempStatusPill');
+            tempEl.textContent = Number(state.temp).toFixed(1);
+
+            if (state.temp >= state.settings.temp_danger) {
+                tempEl.className = "text-2xl font-extrabold text-red-600";
+                tempPill.className = "mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200";
+                tempPill.textContent = "CRITICAL";
+            } else if (state.temp >= state.settings.temp_warning) {
+                tempEl.className = "text-2xl font-extrabold text-amber-600";
+                tempPill.className = "mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200";
+                tempPill.textContent = "WARNING";
+            } else {
+                tempEl.className = "text-2xl font-extrabold text-slate-900";
+                tempPill.className = "mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200";
+                tempPill.textContent = "NORMAL";
+            }
+
+            // Humidity
+            const humEl = document.getElementById('humidityValue');
+            const humPill = document.getElementById('humStatusPill');
+            humEl.textContent = Math.round(state.humidity);
+
+            if (state.humidity >= state.settings.hum_danger) {
+                humEl.className = "text-2xl font-extrabold text-red-600";
+                humPill.className = "mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200";
+                humPill.textContent = "VERY HIGH";
+            } else if (state.humidity >= state.settings.hum_warning) {
+                humEl.className = "text-2xl font-extrabold text-amber-600";
+                humPill.className = "mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200";
+                humPill.textContent = "ELEVATED";
+            } else {
+                humEl.className = "text-2xl font-extrabold text-slate-900";
+                humPill.className = "mt-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200";
+                humPill.textContent = "OPTIMAL";
+            }
+
+            // Light Intensity (0 - 10)
+            const lightVal = Math.min(10, Math.max(0, Math.round(state.light)));
+            document.getElementById('lightValue').textContent = lightVal;
+            document.getElementById('lightProgressBar').style.width = (lightVal * 10) + '%';
+        }
+
+        function renderGasSmokeCard() {
+            const isDetected = Boolean(state.smoke_detected === true || state.smoke_detected === 1 || state.smoke_detected === "1");
+            const badge = document.getElementById('smokeStatusBadge');
+            const badgeDot = document.getElementById('smokeBadgeDot');
+            const badgeText = document.getElementById('smokeBadgeText');
+            const gasIcon = document.getElementById('gasIcon');
+            const gasIconBox = document.getElementById('gasIconBox');
+            const smokeDesc = document.getElementById('smokeDescription');
+            const backdrop = document.getElementById('smokeAlertBackdrop');
+            const globalHazard = document.getElementById('globalHazardBanner');
+            const ppmText = document.getElementById('smokePpmText');
+
+            if (isDetected) {
+                // Red Pulsing DANGER badge
+                badge.className = "px-7 py-3 rounded-2xl font-black text-lg tracking-wider flex items-center gap-2.5 bg-red-50 border border-red-300 text-red-700 shadow-md badge-danger-pulse transition-all";
+                badgeDot.className = "w-3 h-3 rounded-full bg-red-600 animate-ping";
+                badgeText.textContent = "DANGER";
+
+                gasIconBox.className = "w-9 h-9 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600";
+                gasIcon.className = "ph-fill ph-fire text-xl animate-bounce";
+                smokeDesc.innerHTML = `<span class="text-red-700 font-semibold">SMOKE / COMBUSTIBLE GAS DETECTED!</span> Please carefully check this area.`;
+                backdrop.className = "absolute -right-12 -top-12 w-48 h-48 bg-red-200/40 rounded-full blur-2xl pointer-events-none transition-all duration-500";
+                ppmText.textContent = "Trigger: ACTIVE (1)";
+                ppmText.className = "font-mono text-[11px] text-red-600 font-bold";
+                globalHazard.classList.remove('hidden');
+            } else {
+                // Green SAFE badge
+                badge.className = "px-7 py-3 rounded-2xl font-black text-lg tracking-wider flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 transition-all shadow-sm";
+                badgeDot.className = "w-3 h-3 rounded-full bg-emerald-500";
+                badgeText.textContent = "SAFE";
+
+                gasIconBox.className = "w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600";
+                gasIcon.className = "ph-bold ph-wind text-xl";
+                smokeDesc.textContent = "No detect gas or smoke.";
+                backdrop.className = "absolute -right-12 -top-12 w-40 h-40 bg-emerald-100/50 rounded-full blur-2xl pointer-events-none transition-all duration-500";
+                ppmText.textContent = "Status: Nominal (0)";
+                ppmText.className = "font-mono text-[11px] text-slate-500";
+                globalHazard.classList.add('hidden');
+            }
+        }
+
+        function renderValveCard() {
+            const isOpen = Boolean(state.valve_open === true || state.valve_open === 1 || state.valve_open === "true");
+            const iconBox = document.getElementById('valveIndicatorIconBox');
+            const icon = document.getElementById('valveIcon');
+            const text = document.getElementById('valveStatusText');
+            const chip = document.getElementById('valveStatusChip');
+            const lastCmd = document.getElementById('valveLastCmd');
+
+            if (isOpen) {
+                iconBox.className = "w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center";
+                icon.className = "ph-bold ph-lock-key-open text-lg";
+                text.className = "text-base font-bold text-emerald-700 tracking-wide";
+                text.textContent = "OPEN";
+                chip.className = "px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700";
+                chip.textContent = "Active Flow";
+                lastCmd.textContent = "Normal Line";
+            } else {
+                iconBox.className = "w-8 h-8 rounded-lg bg-red-100 text-red-700 flex items-center justify-center";
+                icon.className = "ph-bold ph-lock-key text-lg";
+                text.className = "text-base font-bold text-red-700 tracking-wide";
+                text.textContent = "CLOSED";
+                chip.className = "px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-50 border border-red-200 text-red-700";
+                chip.textContent = "Shut Off";
+                lastCmd.textContent = "Safety Cutoff Active";
+            }
+        }
+
+        function populateSettingsInputs() {
+            if (state.settings) {
+                document.getElementById('tempWarningInput').value = state.settings.temp_warning ?? 28;
+                document.getElementById('tempDangerInput').value = state.settings.temp_danger ?? 35;
+                document.getElementById('humWarningInput').value = state.settings.hum_warning ?? 70;
+                document.getElementById('humDangerInput').value = state.settings.hum_danger ?? 85;
+            }
+        }
+
+        // ================= REAL-TIME DATA SYNC =================
+
+        window.initRealtimeSync = function () {
+            if (window.firebaseDB && window.isFirebaseConfigured) {
+                console.log("Listening to Firebase realtime nodes: /roomhub/latest and /roomhub/settings");
+
+                // 1. Subscribe to /roomhub/latest
+                const latestRef = window.firebaseRef(window.firebaseDB, 'roomhub/latest');
+                window.firebaseOnValue(latestRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        if (data.temperature !== undefined) state.temp = data.temperature;
+                        if (data.temp !== undefined) state.temp = data.temp;
+                        if (data.humidity !== undefined) state.humidity = data.humidity;
+                        if (data.light_intensity !== undefined) state.light = data.light_intensity;
+                        if (data.light !== undefined) state.light = data.light;
+                        if (data.smoke_detected !== undefined) state.smoke_detected = data.smoke_detected;
+                        if (data.valve_open !== undefined) state.valve_open = data.valve_open;
+
+                        if (sessionStorage.getItem('safehome_auth') !== 'true') {
+                            window.location.href = 'login.html';
+                            return;
+                        }
+                        renderEnvironmentCard();
+                        renderGasSmokeCard();
+                        renderValveCard();
+
+                        // Online/Offline Detection based on data updates
+                        clearTimeout(window.offlineTimeout);
+                        document.getElementById('connIndicator').classList.replace('bg-red-500', 'bg-emerald-500');
+                        document.getElementById('connText').textContent = 'Online';
+                        document.getElementById('connText').parentElement.classList.replace('bg-red-50', 'bg-emerald-50');
+                        document.getElementById('connText').parentElement.classList.replace('text-red-700', 'text-emerald-700');
+                        document.getElementById('connText').parentElement.classList.replace('border-red-200', 'border-emerald-200');
+
+                        window.offlineTimeout = setTimeout(() => {
+                            document.getElementById('connIndicator').classList.replace('bg-emerald-500', 'bg-red-500');
+                            document.getElementById('connText').textContent = 'Offline';
+                            document.getElementById('connText').parentElement.classList.replace('bg-emerald-50', 'bg-red-50');
+                            document.getElementById('connText').parentElement.classList.replace('text-emerald-700', 'text-red-700');
+                            document.getElementById('connText').parentElement.classList.replace('border-emerald-200', 'border-red-200');
+                        }, 15000); // 15 seconds without data change = offline
+
+                    }
+                }, (error) => {
+                    console.error("Firebase latest sync error:", error);
+                    showToast("Sync Error", "Could not reach Firebase database path: /roomhub/latest", "danger");
+                });
+
+                // 3. Subscribe to /roomhub/valve_open directly for instant UI feedback
+                const valveRef = window.firebaseRef(window.firebaseDB, 'roomhub/valve_open');
+                window.firebaseOnValue(valveRef, (snapshot) => {
+                    const val = snapshot.val();
+                    if (val !== null) {
+                        state.valve_open = val;
+                        renderValveCard();
+                    }
+                });
+
+                // 2. Subscribe to /roomhub/settings (Auto-populate)
+                const settingsRef = window.firebaseRef(window.firebaseDB, 'roomhub/settings');
+                window.firebaseOnValue(settingsRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        state.settings = {
+                            temp_warning: data.temp_warning ?? state.settings.temp_warning,
+                            temp_danger: data.temp_danger ?? state.settings.temp_danger,
+                            hum_warning: data.hum_warning ?? state.settings.hum_warning,
+                            hum_danger: data.hum_danger ?? state.settings.hum_danger,
+                        };
+                        populateSettingsInputs();
+                        renderEnvironmentCard(); // re-evaluate thresholds
+                    }
+                });
+
+            }
+        };
+        // ================= EMERGENCY CLOSE VALVE ACTION =================
+        window.emergencyCloseValve = async function () {
+            const btn = document.getElementById('emergencyValveBtn');
+            const originalHTML = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> SENDING CUTOFF COMMAND...`;
+
+            try {
+                if (window.firebaseDB && window.isFirebaseConfigured) {
+                    const controlRef = window.firebaseRef(window.firebaseDB, 'roomhub/valve_open');
+                    await window.firebaseSet(controlRef, false);
+
+                    // Also set local optimistically
+                    state.valve_open = false;
+                    renderValveCard();
+                    showToast("VALVE EMERGENCY CLOSE SENT", "Payload { valve_open: false } written to /roomhub", "danger");
+                }
+            } catch (err) {
+                console.error("Emergency valve close error:", err);
+                showToast("Command Failed", err.message, "danger");
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }, 800);
+            }
+        };
+
+        // ================= SAVE SETTINGS =================
+        window.saveSettings = async function (event) {
+            event.preventDefault();
+
+            const saveBtn = document.getElementById('saveSettingsBtn');
+            const originalText = saveBtn.innerHTML;
+
+            const newSettings = {
+                temp_warning: parseFloat(document.getElementById('tempWarningInput').value),
+                temp_danger: parseFloat(document.getElementById('tempDangerInput').value),
+                hum_warning: parseFloat(document.getElementById('humWarningInput').value),
+                hum_danger: parseFloat(document.getElementById('humDangerInput').value)
+            };
+
+            // Validation
+            if (newSettings.temp_warning >= newSettings.temp_danger) {
+                showToast("Invalid Configuration", "Temp Warning must be lower than Temp Danger threshold.", "warning");
+                return;
+            }
+            if (newSettings.hum_warning >= newSettings.hum_danger) {
+                showToast("Invalid Configuration", "Hum Warning must be lower than Hum Danger threshold.", "warning");
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        Saving to Firebase...
+      `;
+
+            try {
+                if (window.firebaseDB && window.isFirebaseConfigured) {
+                    const settingsRef = window.firebaseRef(window.firebaseDB, 'roomhub/settings');
+                    await window.firebaseSet(settingsRef, newSettings);
+                    state.settings = newSettings;
+                    renderEnvironmentCard();
+                    showToast("Settings Updated", "All 4 threshold parameters saved to /roomhub/settings on Firebase.", "success");
+                }
+            } catch (err) {
+                console.error("Save settings error:", err);
+                showToast("Save Failed", err.message, "danger");
+            } finally {
+                setTimeout(() => {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                }, 500);
+            }
+        };
+
+        // Manual reload trigger
+        window.loadSettingsFromFirebase = function () {
+            populateSettingsInputs();
+            showToast("Settings Reloaded", "Form fields re-populated with current hub thresholds.");
+        };
+
+        // Logout handler
+        window.handleLogout = function (e) {
+            sessionStorage.removeItem('safehome_auth');
+            sessionStorage.removeItem('safehome_user');
+            window.location.href = "login.html";
+        };
+
+        // Check login auth guard (convenience check)
+        window.addEventListener('DOMContentLoaded', () => {
+            renderEnvironmentCard();
+            renderGasSmokeCard();
+            renderValveCard();
+            populateSettingsInputs();
+        });
+    </script>
+</body>
+
+</html>
